@@ -51,7 +51,12 @@ Run the following commands in the terminal
 
 Then go to either `RNN_Captioning.ipynb` or `LSTM_Captioning.ipynb` and run the cells.
 
-## Results
-These results are not very good because I did not train on complete dataset for very long, but in LSTM case they are somewhat reasonable.
+# Results
+These results are horrible because I did not train on complete dataset for very long, but in LSTM case they are somewhat okayish. I will update them as soon as I get time to train on the complete dataset.
+
+### RNN
+
+
+### LSTM
 
 
