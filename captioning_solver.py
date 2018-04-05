@@ -232,4 +232,4 @@ class CaptioningSolver(object):
             # TODO: Implement some logic to check Bleu on validation set periodically
 
         # At the end of training swap the best params into the model
-        self.model.params = self.best_params
+#         self.model.params = self.best_params

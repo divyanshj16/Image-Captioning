@@ -90,12 +90,6 @@ class CaptioningRNN(object):
         - loss: Scalar loss
         - grads: Dictionary of gradients parallel to self.params
         """
-        # Cut captions into two pieces: captions_in has everything but the last word
-        # and will be input to the RNN; captions_out has everything but the first
-        # word and this is what we will expect the RNN to generate. These are offset
-        # by one relative to each other because the RNN should produce word (t+1)
-        # after receiving word t. The first element of captions_in will be the START
-        # token, and the first element of captions_out will be the first word.
         captions_in = captions[:, :-1]
         captions_out = captions[:, 1:]
 
@@ -116,27 +110,6 @@ class CaptioningRNN(object):
         W_vocab, b_vocab = self.params['W_vocab'], self.params['b_vocab']
 
         loss, grads = 0.0, {}
-        ############################################################################
-        # TODO: Implement the forward and backward passes for the CaptioningRNN.   #
-        # In the forward pass you will need to do the following:                   #
-        # (1) Use an affine transformation to compute the initial hidden state     #
-        #     from the image features. This should produce an array of shape (N, H)#
-        # (2) Use a word embedding layer to transform the words in captions_in     #
-        #     from indices to vectors, giving an array of shape (N, T, W).         #
-        # (3) Use either a vanilla RNN or LSTM (depending on self.cell_type) to    #
-        #     process the sequence of input word vectors and produce hidden state  #
-        #     vectors for all timesteps, producing an array of shape (N, T, H).    #
-        # (4) Use a (temporal) affine transformation to compute scores over the    #
-        #     vocabulary at every timestep using the hidden states, giving an      #
-        #     array of shape (N, T, V).                                            #
-        # (5) Use (temporal) softmax to compute loss using captions_out, ignoring  #
-        #     the points where the output word is <NULL> using the mask above.     #
-        #                                                                          #
-        # In the backward pass you will need to compute the gradient of the loss   #
-        # with respect to all model parameters. Use the loss and grads variables   #
-        # defined above to store loss and gradients; grads[k] should give the      #
-        # gradients for self.params[k].                                            #
-        ############################################################################
         h0, cache_affine = affine_forward(features, W_proj,b_proj)
         emb , cache_emb = word_embedding_forward(captions_in, W_embed)
         if self.cell_type == 'rnn':
@@ -153,10 +126,6 @@ class CaptioningRNN(object):
             demb, dh0, grads['Wx'], grads['Wh'], grads['b'] = lstm_backward(drnn_out,cache_lstm)
         grads['W_embed'] = word_embedding_backward(demb, cache_emb)
         _, grads['W_proj'], grads['b_proj'] = affine_backward(dh0,cache_affine)
-         
-        ############################################################################
-        #                             END OF YOUR CODE                             #
-        ############################################################################
 
         return loss, grads
 
@@ -187,34 +156,13 @@ class CaptioningRNN(object):
         """
         N = features.shape[0]
         captions = self._null * np.ones((N, max_length), dtype=np.int32)
-
+        
         # Unpack parameters
         W_proj, b_proj = self.params['W_proj'], self.params['b_proj']
         W_embed = self.params['W_embed']
         Wx, Wh, b = self.params['Wx'], self.params['Wh'], self.params['b']
         W_vocab, b_vocab = self.params['W_vocab'], self.params['b_vocab']
 
-        ###########################################################################
-        # TODO: Implement test-time sampling for the model. You will need to      #
-        # initialize the hidden state of the RNN by applying the learned affine   #
-        # transform to the input image features. The first word that you feed to  #
-        # the RNN should be the <START> token; its value is stored in the         #
-        # variable self._start. At each timestep you will need to do to:          #
-        # (1) Embed the previous word using the learned word embeddings           #
-        # (2) Make an RNN step using the previous hidden state and the embedded   #
-        #     current word to get the next hidden state.                          #
-        # (3) Apply the learned affine transformation to the next hidden state to #
-        #     get scores for all words in the vocabulary                          #
-        # (4) Select the word with the highest score as the next word, writing it #
-        #     to the appropriate slot in the captions variable                    #
-        #                                                                         #
-        # For simplicity, you do not need to stop generating after an <END> token #
-        # is sampled, but you can if you want to.                                 #
-        #                                                                         #
-        # HINT: You will not be able to use the rnn_forward or lstm_forward       #
-        # functions; you'll need to call rnn_step_forward or lstm_step_forward in #
-        # a loop.                                                                 #
-        ###########################################################################
         N,D = features.shape
         prev_idx = [self._start] * N 
         h0,_ = affine_forward(features, W_proj, b_proj)
@@ -232,7 +180,5 @@ class CaptioningRNN(object):
             scores, _ = affine_forward(h0, W_vocab, b_vocab)
             prev_idx = list(np.argmax(scores,axis=1))
             captions[:,i] = prev_idx
-        ############################################################################
-        #                             END OF YOUR CODE                             #
-        ############################################################################
+            
         return captions
